@@ -7,19 +7,17 @@ Adding a new provider means:
   That is all.
 """
 
-from .protocol import LLMProvider
-from .anthropic import AnthropicProvider
-from .openai import OpenAIProvider
-from .ollama import OllamaProvider
-from .openrouter import OpenRouterProvider
-from ..config.schema import ProviderConfig
-from ..exceptions import UnknownProviderError
+import importlib
 
-_REGISTRY: dict[str, type[LLMProvider]] = {
-    "anthropic": AnthropicProvider,
-    "openai": OpenAIProvider,
-    "ollama": OllamaProvider,
-    "openrouter": OpenRouterProvider,
+from .protocol import LLMProvider
+from ..config.schema import ProviderConfig
+from ..exceptions import UnknownProviderError, OracleUnavailableError
+
+_REGISTRY: dict[str, tuple[str, str]] = {
+    "anthropic": ("anthropic", "AnthropicProvider"),
+    "openai": ("openai", "OpenAIProvider"),
+    "ollama": ("ollama", "OllamaProvider"),
+    "openrouter": ("openrouter", "OpenRouterProvider"),
 }
 
 
@@ -35,11 +33,19 @@ def build_provider(cfg: ProviderConfig) -> LLMProvider:
 
     Raises:
         UnknownProviderError: If cfg.provider is not registered.
+        OracleUnavailableError: If the provider's required dependencies are not installed.
     """
-    cls = _REGISTRY.get(cfg.provider)
-    if cls is None:
+    if cfg.provider not in _REGISTRY:
         known = ", ".join(sorted(_REGISTRY))
         raise UnknownProviderError(f"Unknown provider '{cfg.provider}'. Known providers: {known}.")
+
+    module_name, class_name = _REGISTRY[cfg.provider]
+    try:
+        module = importlib.import_module(f".{module_name}", package="oraculum.providers")
+    except ImportError as e:
+        raise OracleUnavailableError(f"Provider '{cfg.provider}' requires additional dependencies. " f"Please install them with: pip install oraculum[{cfg.provider}]") from e
+
+    cls = getattr(module, class_name)
     return cls(cfg)
 
 
