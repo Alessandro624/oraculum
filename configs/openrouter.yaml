@@ -1,0 +1,7 @@
+provider: openrouter
+model: mistralai/mistral-7b-instruct
+api_key: "${OPENROUTER_API_KEY}"
+
+oracle:
+  reverence: 5
+  max_tokens: 512
