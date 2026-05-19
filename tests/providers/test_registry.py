@@ -2,6 +2,7 @@
 Tests for the provider registry and factory.
 """
 
+from unittest.mock import patch
 import pytest  # type: ignore
 
 from oraculum.config.schema import ProviderConfig
@@ -48,3 +49,11 @@ class TestBuildProvider:
     def test_returned_object_satisfies_protocol(self):
         provider = build_provider(_cfg("ollama"))
         assert isinstance(provider, LLMProvider)
+
+    @patch("oraculum.providers.importlib.import_module")
+    def test_import_error_raises_oracle_unavailable(self, mock_import):
+        from oraculum.exceptions import OracleUnavailableError
+
+        mock_import.side_effect = ImportError("No module named 'ollama'")
+        with pytest.raises(OracleUnavailableError, match="ollama"):
+            build_provider(_cfg("ollama", api_key="x"))
