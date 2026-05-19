@@ -2,8 +2,13 @@
 Result models.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
+
+if TYPE_CHECKING:
+    from .parser.formula import Formula
 
 
 @dataclass
@@ -24,12 +29,12 @@ class SatResult:
     assignment: Optional[Dict[str, bool]]
     oracle_comment: str
     prophecy_number: int
-    formula: str
+    formula: "Formula"
     prayer: str = field(repr=False)
 
     def __str__(self) -> str:
         status = "SAT" if self.satisfiable else "UNSAT"
-        lines = [f"[#{self.prophecy_number}] {status}  formula={self.formula!r}"]
+        lines = [f"[#{self.prophecy_number}] {status}  formula={self.formula.normalized!r}"]
         if self.assignment:
             pairs = ", ".join(f"{k}={v}" for k, v in self.assignment.items())
             lines.append(f"  assignment : {pairs}")
@@ -55,7 +60,7 @@ class UnsatResult:
     satisfying_assignment: Optional[Dict[str, bool]]
     oracle_comment: str
     prophecy_number: int
-    formula: str
+    formula: "Formula"
     prayer: str = field(repr=False)
 
     def __str__(self) -> str:
@@ -63,7 +68,7 @@ class UnsatResult:
             status = "UNSAT certified"
         else:
             status = "NOT UNSAT (counterexample found)"
-        lines = [f"[#{self.prophecy_number}] {status}  formula={self.formula!r}"]
+        lines = [f"[#{self.prophecy_number}] {status}  formula={self.formula.normalized!r}"]
         if self.satisfying_assignment:
             pairs = ", ".join(f"{k}={v}" for k, v in self.satisfying_assignment.items())
             lines.append(f"  counterexample: {pairs}")

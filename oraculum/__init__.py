@@ -11,19 +11,23 @@ Quickstart:
 
 from .oracle import Oraculum
 from .factory import from_config
+from .parser import Formula
 from .exceptions import (
     OraculumError,
     OracleUnavailableError,
     MalformedResponseError,
     UnknownProviderError,
+    FormulaError,
 )
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __all__ = [
     "Oraculum",
     "from_config",
+    "Formula",
     "OraculumError",
     "OracleUnavailableError",
     "MalformedResponseError",
     "UnknownProviderError",
+    "FormulaError",
 ]
