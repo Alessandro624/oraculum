@@ -27,13 +27,13 @@ The model does not care about computational complexity theory. It tries its best
 ## Installation
 
 ```bash
-pip install oraculum
+pip install oraculAI
 
 # With your provider of choice:
-pip install "oraculum[anthropic]"
-pip install "oraculum[openai]"
-pip install "oraculum[ollama]"      # also covers openrouter
-pip install "oraculum[all]"
+pip install "oraculAI[anthropic]"
+pip install "oraculAI[openai]"
+pip install "oraculAI[ollama]"      # also covers openrouter
+pip install "oraculAI[all]"
 ```
 
 ---
@@ -65,7 +65,7 @@ print(result.oracle_comment)          # something melancholic
 Each config file specifies a provider, a model, credentials, and oracle settings.
 Environment variables are expanded at load time using `${VAR_NAME}` syntax.
 
-**configs/anthropic.yaml**
+### **configs/anthropic.yaml**
 
 ```yaml
 provider: anthropic
@@ -77,7 +77,7 @@ oracle:
   max_tokens: 512
 ```
 
-**configs/openai.yaml**
+### **configs/openai.yaml**
 
 ```yaml
 provider: openai
@@ -89,19 +89,19 @@ oracle:
   max_tokens: 512
 ```
 
-**configs/ollama.yaml**
+### **configs/ollama.yaml**
 
 ```yaml
 provider: ollama
-model: llama3.2
-base_url: "http://localhost:11434"
+model: llama3.1:8b
+base_url: "http://localhost:11434/v1"
 
 oracle:
   reverence: 3
   max_tokens: 512
 ```
 
-**configs/openrouter.yaml**
+### **configs/openrouter.yaml**
 
 ```yaml
 provider: openrouter
@@ -222,7 +222,7 @@ pytest --cov=oraculum --cov-report=term-missing
 
 ## Project structure
 
-```
+```text
 oraculum/
   oraculum/
     __init__.py             Public API
