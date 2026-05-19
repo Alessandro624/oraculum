@@ -4,7 +4,7 @@ Tests for the tokenizer: source string -> list[Token].
 
 import pytest  # type: ignore
 from oraculum.parser.tokenizer import tokenize
-from oraculum.parser.tokens import TokenType
+from oraculum.parser.tokens import TokenType, Token
 from oraculum.exceptions import FormulaError
 
 
@@ -101,3 +101,12 @@ class TestErrors:
     def test_hash_raises(self):
         with pytest.raises(FormulaError):
             tokenize("x1 # x2")
+
+
+class TestTokenRepr:
+    def test_token_str(self):
+        from oraculum.parser.tokens import Token, TokenType
+
+        t = Token(TokenType.VAR, "x1", 3)
+        assert "x1" in str(t)
+        assert "3" in str(t)
