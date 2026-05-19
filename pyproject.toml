@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "oraculum"
+name = "oraculAI"
 version = "1.0.0"
 description = "An implementation of the O_SAT and O_UNSAT oracles, which cannot exist. They do now."
 readme = "README.md"
