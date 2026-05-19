@@ -12,7 +12,7 @@ Quickstart:
 from .oracle import Oraculum
 from .factory import from_config
 from .exceptions import (
-    OracolumError,
+    OraculumError,
     OracleUnavailableError,
     MalformedResponseError,
     UnknownProviderError,
@@ -22,7 +22,7 @@ __version__ = "1.0.0"
 __all__ = [
     "Oraculum",
     "from_config",
-    "OracolumError",
+    "OraculumError",
     "OracleUnavailableError",
     "MalformedResponseError",
     "UnknownProviderError",

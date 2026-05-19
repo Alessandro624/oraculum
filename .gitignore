@@ -17,6 +17,7 @@ ENV/
 .env
 .env.*
 !.env.example
+uv.lock
 
 # Distribution
 pip-wheel-metadata/
