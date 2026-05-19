@@ -2,7 +2,7 @@
 Tests for the provider registry and factory.
 """
 
-import pytest
+import pytest  # type: ignore
 
 from oraculum.config.schema import ProviderConfig
 from oraculum.exceptions import UnknownProviderError

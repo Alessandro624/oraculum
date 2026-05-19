@@ -3,6 +3,10 @@ Tests for result model dataclasses.
 """
 
 from oraculum.models import OracleStats, SatResult, UnsatResult
+from oraculum.parser.formula import Formula
+
+_F_SAT = Formula.parse("x1 OR x2")
+_F_UNSAT = Formula.parse("x1 AND (NOT x1)")
 
 
 def _sat(satisfiable=True, assignment=None, comment="test comment"):
@@ -11,7 +15,7 @@ def _sat(satisfiable=True, assignment=None, comment="test comment"):
         assignment=assignment,
         oracle_comment=comment,
         prophecy_number=1,
-        formula="x1 OR x2",
+        formula=_F_SAT,
         prayer="O Great Oracle...",
     )
 
@@ -22,7 +26,7 @@ def _unsat(unsatisfiable=True, assignment=None):
         satisfying_assignment=assignment,
         oracle_comment="the void",
         prophecy_number=2,
-        formula="x1 AND (NOT x1)",
+        formula=_F_UNSAT,
         prayer="O Venerable Oracle...",
     )
 

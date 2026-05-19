@@ -5,7 +5,7 @@ Tests for the YAML config loader.
 import textwrap
 from pathlib import Path
 
-import pytest
+import pytest  # type: ignore
 
 from oraculum.config.loader import load_config, _expand_env_vars
 
