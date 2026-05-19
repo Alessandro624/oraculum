@@ -18,7 +18,7 @@ from .exceptions import (
     UnknownProviderError,
 )
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __all__ = [
     "Oraculum",
     "from_config",
