@@ -2,7 +2,6 @@
 Tests for the pretty printer.
 """
 
-import pytest  # type: ignore
 from oraculum.parser.formula import Formula
 from oraculum.parser.pretty import pretty
 from oraculum.parser.nodes import VarNode, NotNode, AndNode, OrNode
@@ -62,8 +61,9 @@ class TestNestedOutput:
 
 class TestDirectNodeUsage:
     def test_works_on_raw_nodes(self):
-        node = AndNode(VarNode("a"), OrNode(VarNode("b"), VarNode("c")))
+        node = AndNode(VarNode("a"), OrNode(VarNode("b"), NotNode(VarNode("c"))))
         output = pretty(node)
         assert "AND" in output
         assert "OR" in output
+        assert "NOT" in output
         assert "a" in output
