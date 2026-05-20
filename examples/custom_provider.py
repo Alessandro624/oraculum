@@ -8,9 +8,9 @@ construction, or when writing tests with a stub provider.
 import json
 import os
 
-from oraculum import Oraculum
-from oraculum.providers import build_provider
+from oraculum import Formula, Oraculum
 from oraculum.config.schema import ProviderConfig
+from oraculum.providers import build_provider
 
 # Option A: build from a ProviderConfig programmatically
 provider_cfg = ProviderConfig(
@@ -22,11 +22,12 @@ provider_cfg = ProviderConfig(
 provider = build_provider(provider_cfg)
 oracle = Oraculum(provider, reverence=4)
 
-result = oracle.osat("(x1 OR x2) AND (NOT x1 OR x3)")
+f = Formula.parse("(x1 OR x2) AND (NOT x1 OR x3)")
+result = oracle.osat(f)
 print(result)
 
 
-# Option B: use a stub provider for local development or testing
+# Option B: stub provider for local development or testing
 class EchoProvider:
     """
     A stub that always returns SAT with a fixed assignment.
@@ -44,5 +45,12 @@ class EchoProvider:
 
 
 stub_oracle = Oraculum(EchoProvider(), reverence=1)
-result = stub_oracle.osat("anything")
+result = stub_oracle.osat(Formula.parse("x1 OR x2"))
 print(result)
+
+
+# Option C: pretty-print the AST before querying
+from oraculum.parser.pretty import pretty
+
+formula = Formula.parse("(x1 OR x2) AND (NOT x1 OR x3)")
+print(pretty(formula.ast))
