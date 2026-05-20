@@ -1,29 +1,30 @@
 """
 Example: build an oracle from a YAML config file.
 
-This is the recommended entry point. Pick any config from configs/,
-set the corresponding environment variable, and run.
+    ANTHROPIC_API_KEY=sk-ant-... python examples/from_config.py configs/anthropic.yaml
+    OPENAI_API_KEY=sk-...       python examples/from_config.py configs/openai.yaml
+    python examples/from_config.py configs/ollama.yaml
 """
 
 import sys
-from oraculum import from_config
+from oraculum import Formula, from_config
 
 if len(sys.argv) < 2:
     print("Usage: python examples/from_config.py <config_path>")
-    print("Example: python examples/from_config.py configs/anthropic.yaml")
     sys.exit(1)
 
 oracle = from_config(sys.argv[1])
 
-formulas = [
-    ("osat", "(x1 OR x2) AND (NOT x1 OR x3)"),
-    ("osat", "x1 AND (NOT x1)"),
+cases = [
+    ("osat",   "(x1 OR x2) AND (NOT x1 OR x3)"),
+    ("osat",   "x1 AND (NOT x1)"),
     ("ounsat", "x1 AND (NOT x1)"),
     ("ounsat", "x1 OR x2"),
 ]
 
-for mode, formula in formulas:
+for mode, source in cases:
     print("-" * 60)
+    formula = Formula.parse(source)
     result = oracle.osat(formula) if mode == "osat" else oracle.ounsat(formula)
     print(result)
 

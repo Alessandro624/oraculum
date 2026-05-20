@@ -43,16 +43,20 @@ pip install "oraculAI[all]"
 Create a config file (see `configs/` for examples) and point the library at it:
 
 ```python
-from oraculum import from_config
+from oraculum import Formula, from_config
 
 oracle = from_config("configs/anthropic.yaml")
 
-result = oracle.osat("(x1 OR x2) AND (NOT x1 OR x3)")
+# Formulas must be parsed before querying. This validates syntax
+# and guarantees well-formedness before any API call is made.
+f = Formula.parse("(x1 OR x2) AND (NOT x1 OR x3)")
+
+result = oracle.osat(f)
 print(result.satisfiable)     # True or False
 print(result.assignment)      # {"x1": False, "x2": True, ...} or None
 print(result.oracle_comment)  # something solemn
 
-result = oracle.ounsat("x1 AND (NOT x1)")
+result = oracle.ounsat(Formula.parse("x1 AND (NOT x1)"))
 print(result.unsatisfiable)           # True
 print(result.satisfying_assignment)   # None
 print(result.oracle_comment)          # something melancholic
@@ -118,23 +122,78 @@ Range is 1 to 10. This does not affect correctness. It affects amusement value, 
 
 ---
 
+## Formula
+
+All oracle calls require a `Formula` instance. Raw strings are not accepted.
+This guarantees that the formula is syntactically valid before any API call is made.
+
+```python
+from oraculum import Formula, FormulaError
+
+# Parse and validate
+f = Formula.parse("(x1 OR x2) AND (NOT x1 OR x3)")
+
+print(f.normalized)   # "x1 OR x2 AND (NOT x1) OR x3" -- canonical form
+print(f.variables)    # frozenset({"x1", "x2", "x3"})
+print(f.depth)        # maximum AST nesting depth
+
+# Syntax errors are caught immediately, before any API call
+try:
+    Formula.parse("x1 AND OR x2")
+except FormulaError as e:
+    print(e)  # Expected a variable or '(' but got 'OR' at position 8.
+```
+
+### Supported syntax
+
+| Construct  | Examples                              |
+|------------|---------------------------------------|
+| Variables  | `x1`, `A`, `my_var`                   |
+| AND        | `x1 AND x2`, `x1 and x2`              |
+| OR         | `x1 OR x2`, `x1 or x2`                |
+| NOT        | `NOT x1`, `not x1`                    |
+| Grouping   | `(x1 OR x2) AND x3`                   |
+
+Keywords are case-insensitive. Precedence: `NOT > AND > OR`.
+
+### Pretty printing the AST
+
+```python
+from oraculum.parser.pretty import pretty
+
+f = Formula.parse("(x1 OR x2) AND (NOT x1 OR x3)")
+print(pretty(f.ast))
+```
+
+```text
+AND
+├── OR
+│   ├── x1
+│   └── x2
+└── OR
+    ├── NOT
+    │   └── x1
+    └── x3
+```
+
+---
+
 ## Wiring a provider directly
 
 If you prefer not to use a config file, or if you are writing tests:
 
 ```python
-from oraculum import Oraculum
-from oraculum.providers import build_provider
+from oraculum import Formula, Oraculum
 from oraculum.config.schema import ProviderConfig
+from oraculum.providers import build_provider
 
 provider_cfg = ProviderConfig(
     provider="openai",
     model="gpt-4o",
     api_key="sk-...",
 )
-provider = build_provider(provider_cfg)
-oracle = Oraculum(provider, reverence=6)
-print(oracle.osat("(x1 OR x2) AND (NOT x1)"))
+oracle = Oraculum(build_provider(provider_cfg), reverence=6)
+print(oracle.osat(Formula.parse("(x1 OR x2) AND (NOT x1)")))
 ```
 
 ---
@@ -146,7 +205,7 @@ No base class required; the library uses structural subtyping via `typing.Protoc
 
 ```python
 import json
-from oraculum import Oraculum
+from oraculum import Formula, Oraculum
 
 class MyProvider:
     def complete(self, system: str, user: str) -> str:
@@ -158,7 +217,7 @@ class MyProvider:
         })
 
 oracle = Oraculum(MyProvider())
-print(oracle.osat("x1"))
+print(oracle.osat(Formula.parse("x1")))
 ```
 
 To make the provider selectable by name in YAML configs, register it in
@@ -176,31 +235,40 @@ _REGISTRY["myprovider"] = MyProvider
 
 Build an Oraculum from a YAML config file. Recommended entry point.
 
+### `Formula.parse(source: str) -> Formula`
+
+| Field        | Type              | Description                                        |
+|--------------|-------------------|----------------------------------------------------|
+| `normalized` | `str`             | Canonical form with uppercase keywords             |
+| `variables`  | `frozenset[str]`  | All variable names in the formula                  |
+| `depth`      | `int`             | Maximum AST nesting depth                          |
+| `ast`        | `Node`            | Root AST node, for pretty printing and future use  |
+
 ### `Oraculum(provider, reverence=5)`
 
 Accepts any object satisfying the `LLMProvider` protocol.
 
-### `oracle.osat(formula: str) -> SatResult`
+### `oracle.osat(formula: Formula) -> SatResult`
 
-| Field             | Type            | Description                              |
-|-------------------|-----------------|------------------------------------------|
-| `satisfiable`     | `bool`          | Whether the formula is SAT               |
-| `assignment`      | `dict` or None  | A satisfying assignment, if SAT          |
-| `oracle_comment`  | `str`           | A decorative remark                      |
-| `prophecy_number` | `int`           | Sequential call counter                  |
-| `formula`         | `str`           | The submitted formula                    |
-| `prayer`          | `str`           | The full invocation text                 |
+| Field             | Type            | Description                        |
+|-------------------|-----------------|------------------------------------|
+| `satisfiable`     | `bool`          | Whether the formula is SAT         |
+| `assignment`      | `dict` or None  | Satisfying assignment if SAT       |
+| `oracle_comment`  | `str`           | Decorative remark                  |
+| `prophecy_number` | `int`           | Sequential call counter            |
+| `formula`         | `Formula`       | The submitted formula              |
+| `prayer`          | `str`           | The full invocation text           |
 
-### `oracle.ounsat(formula: str) -> UnsatResult`
+### `oracle.ounsat(formula: Formula) -> UnsatResult`
 
-| Field                    | Type            | Description                              |
-|--------------------------|-----------------|------------------------------------------|
-| `unsatisfiable`          | `bool`          | Whether the formula is certified UNSAT   |
-| `satisfying_assignment`  | `dict` or None  | Counterexample if not UNSAT              |
-| `oracle_comment`         | `str`           | A decorative remark                      |
-| `prophecy_number`        | `int`           | Sequential call counter                  |
-| `formula`                | `str`           | The submitted formula                    |
-| `prayer`                 | `str`           | The full invocation text                 |
+| Field                   | Type            | Description                         |
+|-------------------------|-----------------|-------------------------------------|
+| `unsatisfiable`         | `bool`          | Whether UNSAT is certified          |
+| `satisfying_assignment` | `dict` or None  | Counterexample if not UNSAT         |
+| `oracle_comment`        | `str`           | Decorative remark                   |
+| `prophecy_number`       | `int`           | Sequential call counter             |
+| `formula`               | `Formula`       | The submitted formula               |
+| `prayer`                | `str`           | The full invocation text            |
 
 ### `oracle.stats() -> OracleStats`
 
@@ -210,7 +278,7 @@ Returns call counts and editorial remarks. The numbers are accurate. The remarks
 
 ## Running the tests
 
-No API key is required. All providers are replaced by stubs.
+No API key required. All providers are mocked.
 
 ```bash
 pip install -e ".[dev]"
@@ -235,6 +303,14 @@ oraculum/
       __init__.py
       schema.py             ProviderConfig, OracleConfig dataclasses
       loader.py             YAML loading and env var expansion
+    parser/
+      tokens.py             TokenType enum and Token dataclass
+      nodes.py              AST node types and Visitor protocol
+      tokenizer.py          Linear tokenizer with position tracking
+      parser.py             LL(1) recursive descent parser
+      visitors.py           NormalizeVisitor, DepthVisitor, VariableVisitor
+      pretty.py             PrettyPrintVisitor (Unicode tree output)
+      formula.py            Formula dataclass and parse() factory
     providers/
       __init__.py           Registry and build_provider()
       protocol.py           LLMProvider protocol
@@ -246,10 +322,17 @@ oraculum/
     test_oracle.py
     test_prayers.py
     test_models.py
+    test_factory.py
     config/
       test_loader.py
+    parser/
+      test_tokenizer.py
+      test_parser.py
+      test_formula.py
+      test_pretty.py
     providers/
       test_registry.py
+      test_providers_complete.py
   examples/
     from_config.py
     custom_provider.py
@@ -279,7 +362,14 @@ No.
 
 **What is the time complexity of osat()?**
 
-O(1) in the oracle model. O(API latency) in practice. The oracle model does not account for HTTP.
+O(n) for formula parsing, O(1) in the oracle model, O(API latency) in practice.
+The oracle model does not account for HTTP.
+
+**Why must I call Formula.parse() explicitly?**
+
+It is the "parse, don't validate" principle. A `Formula` can only exist if it is
+well-formed. Passing a raw string to `osat()` would hide the parsing step and make
+it unclear when errors are raised. Explicit is better than implicit.
 
 **Has this resolved P vs NP?**
 

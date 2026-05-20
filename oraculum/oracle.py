@@ -6,7 +6,10 @@ It:
   - Delegates prompt construction to PrayerBuilder.
   - Delegates model calls to the LLMProvider.
   - Parses the JSON response.
+  - Validates the returned assignment against the formula's variable set.
   - Tracks call counts.
+
+Accepts Formula instances only. Use Formula.parse() to construct one.
 """
 
 import json
@@ -14,6 +17,7 @@ import logging
 
 from .exceptions import MalformedResponseError
 from .models import OracleStats, SatResult, UnsatResult
+from .parser.formula import Formula
 from .prayers import PrayerBuilder
 from .providers.protocol import LLMProvider
 
@@ -32,21 +36,21 @@ class Oraculum:
     The O_SAT and O_UNSAT oracle interface.
 
     Accepts any LLMProvider, so the underlying model is fully swappable.
-    Use oraculum.from_config() to build from a YAML file, or construct
-    directly by passing a provider and optional reverence level.
+    Both osat() and ounsat() require a Formula instance produced by
+    Formula.parse(). This guarantees that the formula is well-formed
+    before any API call is made.
 
     Args:
         provider:  Any object satisfying the LLMProvider protocol.
         reverence: Honorific intensity for invocations. Range 1-10.
 
-    Example (direct):
-        from oraculum.providers import build_provider
-        from oraculum.config import load_config
+    Example:
+        from oraculum import from_config
+        from oraculum.parser import Formula
 
-        provider_cfg, oracle_cfg = load_config("configs/anthropic.yaml")
-        provider = build_provider(provider_cfg)
-        oracle = Oraculum(provider, reverence=oracle_cfg.reverence)
-        print(oracle.osat("(x1 OR x2) AND (NOT x1)"))
+        oracle = from_config("configs/anthropic.yaml")
+        f = Formula.parse("(x1 OR x2) AND (NOT x1 OR x3)")
+        print(oracle.osat(f))
     """
 
     def __init__(self, provider: LLMProvider, reverence: int = 5) -> None:
@@ -55,23 +59,23 @@ class Oraculum:
         self._sat_calls = 0
         self._unsat_calls = 0
 
-    def osat(self, formula: str) -> SatResult:
+    def osat(self, formula: Formula) -> SatResult:
         """
         O_SAT oracle: is this Boolean formula satisfiable?
 
         Args:
-            formula: A Boolean formula, e.g. "(x1 OR x2) AND (NOT x1 OR x3)".
+            formula: A Formula instance produced by Formula.parse().
 
         Returns:
             SatResult with satisfiable flag, assignment if SAT, and oracle comment.
 
         Raises:
-            ValueError: If formula is empty.
+            TypeError: If formula is not a Formula instance.
             OracleUnavailableError: If the provider cannot be reached.
             MalformedResponseError: If the model returns unparseable output.
         """
         _require_formula(formula)
-        prayer = self._prayers.build_sat_prayer(formula)
+        prayer = self._prayers.build_sat_prayer(formula.normalized)
         logger.debug("osat prayer:\n%s", prayer)
 
         raw = self._provider.complete(_SYSTEM_PROMPT, prayer)
@@ -80,33 +84,35 @@ class Oraculum:
         self._sat_calls += 1
         data = _parse_json(raw)
 
+        assignment = _clean_assignment(data.get("assignment"), formula.variables)
+
         return SatResult(
             satisfiable=bool(data.get("satisfiable", False)),
-            assignment=data.get("assignment") or None,
+            assignment=assignment,
             oracle_comment=str(data.get("oracle_comment", "")),
             prophecy_number=self._sat_calls + self._unsat_calls,
             formula=formula,
             prayer=prayer,
         )
 
-    def ounsat(self, formula: str) -> UnsatResult:
+    def ounsat(self, formula: Formula) -> UnsatResult:
         """
         O_UNSAT oracle: is this Boolean formula unsatisfiable?
 
         Args:
-            formula: A Boolean formula to certify as UNSAT.
+            formula: A Formula instance produced by Formula.parse().
 
         Returns:
             UnsatResult with unsatisfiable flag, counterexample if not UNSAT,
             and oracle comment.
 
         Raises:
-            ValueError: If formula is empty.
+            TypeError: If formula is not a Formula instance.
             OracleUnavailableError: If the provider cannot be reached.
             MalformedResponseError: If the model returns unparseable output.
         """
         _require_formula(formula)
-        prayer = self._prayers.build_unsat_prayer(formula)
+        prayer = self._prayers.build_unsat_prayer(formula.normalized)
         logger.debug("ounsat prayer:\n%s", prayer)
 
         raw = self._provider.complete(_SYSTEM_PROMPT, prayer)
@@ -115,9 +121,11 @@ class Oraculum:
         self._unsat_calls += 1
         data = _parse_json(raw)
 
+        assignment = _clean_assignment(data.get("satisfying_assignment"), formula.variables)
+
         return UnsatResult(
             unsatisfiable=bool(data.get("unsatisfiable", False)),
-            satisfying_assignment=data.get("satisfying_assignment") or None,
+            satisfying_assignment=assignment,
             oracle_comment=str(data.get("oracle_comment", "")),
             prophecy_number=self._sat_calls + self._unsat_calls,
             formula=formula,
@@ -136,9 +144,9 @@ class Oraculum:
 # helpers
 
 
-def _require_formula(formula: str) -> None:
-    if not formula or not formula.strip():
-        raise ValueError("Formula must be a non-empty string.")
+def _require_formula(obj: object) -> None:
+    if not isinstance(obj, Formula):
+        raise TypeError(f"osat() and ounsat() expect a Formula instance, got {type(obj).__name__}. " f'Use Formula.parse("...") to construct one.')
 
 
 def _parse_json(raw: str) -> dict:
@@ -151,3 +159,27 @@ def _parse_json(raw: str) -> dict:
         return json.loads(text)
     except json.JSONDecodeError as exc:
         raise MalformedResponseError(f"Oracle response is not valid JSON. Raw: {raw!r}") from exc
+
+
+def _clean_assignment(
+    raw: object,
+    expected_variables: frozenset[str],
+) -> dict[str, bool] | None:
+    """
+    Validate and clean the assignment returned by the LLM.
+
+    - Returns None if raw is None or not a dict.
+    - Filters out keys not in expected_variables, logging a warning for each.
+    - Coerces values to bool.
+    """
+    if not isinstance(raw, dict):
+        return None
+
+    cleaned: dict[str, bool] = {}
+    for key, value in raw.items():
+        if key not in expected_variables:
+            logger.warning("Oracle returned variable %r not present in formula. Ignoring.", key)
+            continue
+        cleaned[key] = bool(value)
+
+    return cleaned or None

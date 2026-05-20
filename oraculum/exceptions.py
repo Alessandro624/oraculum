@@ -48,3 +48,13 @@ class UnknownProviderError(OraculumError):
 
     Check your configuration file for typos or unsupported providers.
     """
+
+
+class FormulaError(OraculumError):
+    """
+    The formula string is lexically or syntactically malformed.
+
+    Raised by Formula.parse() with a message that includes the exact
+    position and the unexpected token or character, so the caller can
+    provide precise feedback without inspecting the exception type.
+    """
