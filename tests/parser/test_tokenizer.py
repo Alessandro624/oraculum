@@ -103,10 +103,15 @@ class TestErrors:
             tokenize("x1 # x2")
 
 
-class TestTokenRepr:
-    def test_token_str(self):
-        from oraculum.parser.tokens import Token, TokenType
-
+class TestTokenStr:
+    def test_str_contains_value(self):
         t = Token(TokenType.VAR, "x1", 3)
         assert "x1" in str(t)
+
+    def test_str_contains_position(self):
+        t = Token(TokenType.VAR, "x1", 3)
         assert "3" in str(t)
+
+    def test_str_contains_type_name(self):
+        t = Token(TokenType.AND, "AND", 0)
+        assert "AND" in str(t)
