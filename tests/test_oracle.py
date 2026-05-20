@@ -145,3 +145,4 @@ class TestStats:
         s = oracle.stats()
         assert "open" in s.p_vs_np_status
         assert "O(1)" in s.theoretical_complexity
+        assert "2087" in s.turing_award_eta
