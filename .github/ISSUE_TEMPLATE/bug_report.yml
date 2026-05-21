@@ -1,0 +1,86 @@
+name: Bug Report
+description: The oracle said something wrong, or something broke before it could say anything.
+labels: ["bug"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to file a bug report.
+        Please fill in as much detail as possible. The oracle comment field is mandatory.
+        It is usually the most informative part.
+
+  - type: input
+    id: formula
+    attributes:
+      label: Formula
+      description: The exact formula string passed to Formula.parse(), osat(), or ounsat().
+      placeholder: "(x1 OR x2) AND (NOT x1 OR x3)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      description: Which provider were you using?
+      options:
+        - anthropic
+        - openai
+        - ollama
+        - openrouter
+        - custom
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: The model name from your config file.
+      placeholder: "claude-opus-4-5"
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include the full exception traceback if applicable.
+    validations:
+      required: true
+
+  - type: input
+    id: oracle_comment
+    attributes:
+      label: Oracle comment
+      description: >
+        If the oracle responded before the error, paste its comment here.
+        This field is mandatory. It is often the most useful diagnostic information.
+      placeholder: "What did the oracle say?"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: oraculum version
+      placeholder: "2.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12.0"
+    validations:
+      required: false
