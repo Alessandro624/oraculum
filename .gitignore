@@ -71,3 +71,4 @@ desktop.ini
 *.key
 secrets.yaml
 secrets.toml
+output/

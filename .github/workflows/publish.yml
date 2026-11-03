@@ -20,7 +20,10 @@ jobs:
               with:
                   python-version: ${{ matrix.python-version }}
             - run: pip install -e ".[dev]"
-            - run: pytest --tb=short
+            - run: pytest --tb=short --cov=oraculum --cov-report=term-missing --cov-fail-under=100
+            - run: pip install build twine
+            - run: python -m build
+            - run: python -m twine check dist/*
 
     publish:
         needs: test

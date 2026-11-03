@@ -8,7 +8,7 @@ computer science violations is appreciated.
 
 ## Ground rules
 
-- Keep coverage at 100%. The oracle may be probabilistic. The test suite is not.
+- Keep coverage at the 100% CI threshold. Add regression tests for changed behavior.
 - No new dependencies without discussion. We are already asking an LLM to do
   NP-hard work; we do not need more packages for that.
 - Every PR that adds behavior should include at least one example of that behavior
