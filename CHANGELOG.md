@@ -11,6 +11,8 @@ P vs NP remains open. The changelog does not.
 
 ## [Unreleased]
 
+- Add `httpx` to the development dependencies required by provider tests.
+
 ---
 
 ## [2.1.0] - 2024-01-01
