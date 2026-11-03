@@ -146,3 +146,31 @@ class TestStats:
         assert "open" in s.p_vs_np_status
         assert "O(1)" in s.theoretical_complexity
         assert "2087" in s.turing_award_eta
+
+
+@pytest.mark.parametrize("value", ["false", "true", 0, 1, None, [], {}])
+@pytest.mark.parametrize("method,field", [("osat", "satisfiable"), ("ounsat", "unsatisfiable")])
+def test_rejects_non_boolean_verdicts(value, method, field):
+    oracle, _ = _oracle(json.dumps({field: value}))
+    with pytest.raises(MalformedResponseError, match="JSON boolean"):
+        getattr(oracle, method)(Formula.parse("x1"))
+
+
+@pytest.mark.parametrize("raw", ["[]", "null", "true", "42", '"answer"'])
+def test_rejects_non_object_response(raw):
+    oracle, _ = _oracle(raw)
+    with pytest.raises(MalformedResponseError, match="JSON object"):
+        oracle.osat(Formula.parse("x1"))
+
+
+@pytest.mark.parametrize("assignment", [{"x1": "false"}, {"x1": 0}, [], "false"])
+def test_rejects_malformed_assignment(assignment):
+    oracle, _ = _oracle(_sat_json(True, assignment))
+    with pytest.raises(MalformedResponseError):
+        oracle.osat(Formula.parse("x1"))
+
+
+def test_missing_verdict_is_not_silently_false():
+    oracle, _ = _oracle("{}")
+    with pytest.raises(MalformedResponseError):
+        oracle.osat(Formula.parse("x1"))

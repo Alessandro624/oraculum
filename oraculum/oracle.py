@@ -87,7 +87,7 @@ class Oraculum:
         assignment = _clean_assignment(data.get("assignment"), formula.variables)
 
         return SatResult(
-            satisfiable=bool(data.get("satisfiable", False)),
+            satisfiable=_require_boolean(data, "satisfiable"),
             assignment=assignment,
             oracle_comment=str(data.get("oracle_comment", "")),
             prophecy_number=self._sat_calls + self._unsat_calls,
@@ -124,7 +124,7 @@ class Oraculum:
         assignment = _clean_assignment(data.get("satisfying_assignment"), formula.variables)
 
         return UnsatResult(
-            unsatisfiable=bool(data.get("unsatisfiable", False)),
+            unsatisfiable=_require_boolean(data, "unsatisfiable"),
             satisfying_assignment=assignment,
             oracle_comment=str(data.get("oracle_comment", "")),
             prophecy_number=self._sat_calls + self._unsat_calls,
@@ -151,14 +151,24 @@ def _require_formula(obj: object) -> None:
 
 def _parse_json(raw: str) -> dict:
     """Strip optional markdown fences and parse JSON."""
-    text = raw
+    text = raw.strip()
     if text.startswith("```"):
         parts = text.split("```")
         text = parts[1].lstrip("json").strip() if len(parts) >= 2 else text
     try:
-        return json.loads(text)
+        data = json.loads(text)
     except json.JSONDecodeError as exc:
-        raise MalformedResponseError(f"Oracle response is not valid JSON. Raw: {raw!r}") from exc
+        raise MalformedResponseError("Oracle response is not valid JSON.") from exc
+    if not isinstance(data, dict):
+        raise MalformedResponseError("Oracle response must be a JSON object.")
+    return data
+
+
+def _require_boolean(data: dict, key: str) -> bool:
+    value = data.get(key)
+    if type(value) is not bool:
+        raise MalformedResponseError(f"{key} must be a JSON boolean.")
+    return value
 
 
 def _clean_assignment(
@@ -168,18 +178,20 @@ def _clean_assignment(
     """
     Validate and clean the assignment returned by the LLM.
 
-    - Returns None if raw is None or not a dict.
+    - Returns None if raw is None.
     - Filters out keys not in expected_variables, logging a warning for each.
-    - Coerces values to bool.
+    - Rejects values that are not JSON booleans.
     """
-    if not isinstance(raw, dict):
+    if raw is None:
         return None
+    if not isinstance(raw, dict):
+        raise MalformedResponseError("Assignment must be an object or null.")
 
     cleaned: dict[str, bool] = {}
     for key, value in raw.items():
         if key not in expected_variables:
             logger.warning("Oracle returned variable %r not present in formula. Ignoring.", key)
             continue
-        cleaned[key] = bool(value)
+        cleaned[key] = _require_boolean(raw, key)
 
     return cleaned or None
