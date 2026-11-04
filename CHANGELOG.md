@@ -11,7 +11,41 @@ P vs NP remains open. The changelog does not.
 
 ## [Unreleased]
 
-- Add `httpx` to the development dependencies required by provider tests.
+---
+
+## [2.1.1] - 2026-11-04
+
+### Fixed
+
+- Require actual JSON booleans for SAT and UNSAT verdicts. Missing fields and
+  values such as `"false"`, `0`, or `null` now raise `MalformedResponseError`
+  instead of being silently coerced.
+- Require model responses to be JSON objects and assignments to be objects or
+  `null`. Assignment values for formula variables must be actual JSON booleans;
+  unknown variables continue to be filtered out.
+- Trim surrounding whitespace before parsing model responses and omit raw model
+  output from the invalid-JSON error message.
+- Declare `httpx` explicitly in development dependencies for provider tests.
+
+### Added
+
+- Regression tests for malformed response objects, verdicts and assignments.
+- Contribution, security and community guidelines, plus GitHub issue and pull
+  request templates.
+
+### Changed
+
+- Enforce 100% statement coverage in CI and build and validate both source and
+  wheel distributions with Twine before publishing.
+- Use SPDX MIT license metadata with an explicit license file, require
+  `setuptools>=77.0`, and remove the deprecated license classifier.
+
+### Compatibility
+
+- The documented public API is unchanged. Integrations relying on coercion of
+  malformed model responses must handle `MalformedResponseError` instead.
+- Validation checks response structure and types; it does not establish that an
+  assignment satisfies a formula or provide a formal SAT/UNSAT certificate.
 
 ---
 
@@ -94,7 +128,8 @@ P vs NP remains open. The changelog does not.
 - Theoretical complexity: O(1) in the oracle model.
 - Turing Award ETA: not before 2087.
 
-[Unreleased]: https://github.com/Alessandro624/oraculum/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/Alessandro624/oraculum/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/Alessandro624/oraculum/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/Alessandro624/oraculum/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/Alessandro624/oraculum/compare/v1.0.0...v2.0.0
 [1.0.0]: Not available - sorry :)
