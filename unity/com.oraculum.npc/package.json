@@ -1,0 +1,14 @@
+{
+  "name": "com.oraculum.npc",
+  "version": "0.1.0",
+  "displayName": "Oraculum NPC",
+  "description": "Interactive oracle for the Windows and Linux Unity Editor.",
+  "unity": "2021.3",
+  "samples": [
+    {
+      "displayName": "First Consultation",
+      "description": "A scene featuring OracleNPC.",
+      "path": "Samples~/FirstConsultation"
+    }
+  ]
+}

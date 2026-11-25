@@ -24,7 +24,11 @@ The model does not care about computational complexity theory. It tries its best
 
 ---
 
-## Installation
+## Unity Editor
+
+Add the `OracleNPC` prefab to a 2D or 3D scene, enter Play Mode, and choose how reverently to ask your question. The Unity 2021.3+ package includes bridges for Windows x64 and Linux x64. The integration runs in the Editor only. [Unity setup guide](unity/README.md)
+
+## Python installation
 
 ```bash
 pip install oraculAI
@@ -133,7 +137,7 @@ from oraculum import Formula, FormulaError
 # Parse and validate
 f = Formula.parse("(x1 OR x2) AND (NOT x1 OR x3)")
 
-print(f.normalized)   # "x1 OR x2 AND (NOT x1) OR x3" -- canonical form
+print(f.normalized)   # "(x1 OR x2) AND (NOT x1 OR x3)"
 print(f.variables)    # frozenset({"x1", "x2", "x3"})
 print(f.depth)        # maximum AST nesting depth
 
@@ -220,11 +224,11 @@ oracle = Oraculum(MyProvider())
 print(oracle.osat(Formula.parse("x1")))
 ```
 
-To make the provider selectable by name in YAML configs, register it in
+To make the provider selectable by name in YAML configs, place `MyProvider` in `oraculum/providers/myprovider.py`, give it a constructor that accepts a `ProviderConfig`, and register it in
 `oraculum/providers/__init__.py`:
 
 ```python
-_REGISTRY["myprovider"] = MyProvider
+_REGISTRY["myprovider"] = ("myprovider", "MyProvider")
 ```
 
 ---
@@ -318,6 +322,12 @@ oraculum/
       openai.py
       ollama.py
       openrouter.py
+  unity/
+    README.md               Unity setup and bridge build instructions
+    com.oraculum.npc/       Unity package, NPC prefab, sample scene, and bridges
+    bridge.py               Local bridge between Unity and the Python library
+    build_bridge.py         Build the bridge for the current platform
+    smoke_bridge.py         Test the packaged bridge with a local mock provider
   tests/
     test_oracle.py
     test_prayers.py

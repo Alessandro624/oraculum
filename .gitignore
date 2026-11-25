@@ -49,6 +49,8 @@ dmypy.json
 *.swp
 *.swo
 *~
+!unity/com.oraculum.npc/Tools~/
+!unity/com.oraculum.npc/Samples~/
 .ropeproject/
 
 # OS
